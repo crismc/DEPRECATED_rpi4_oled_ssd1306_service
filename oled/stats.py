@@ -114,7 +114,7 @@ def text(txt, line):
     draw.text((x, pos), txt,  font=font, fill=255)
 
 def get_cmd(cmd):
-    return subprocess.check_output(cmd, shell = True, encode='utf-8').strip()
+    return subprocess.check_output(cmd, shell = True, encoding='utf-8').strip()
 
 while True:
 
@@ -136,10 +136,10 @@ while True:
     # Disk = subprocess.check_output(cmd, shell = True )
 
     # Write two lines of text.
-    text("IP: " + str(IP))
-    text(CPU)
-    text(MemUsage)
-    text(Disk)
+    text("IP: " + str(IP), 1)
+    text(CPU, 2)
+    text(MemUsage, 3)
+    text(Disk, 4)
 
     # draw.text((x, top),       "IP: " + str(IP),  font=font, fill=255)
     # draw.text((x, top+8),     str(CPU), font=font, fill=255)
