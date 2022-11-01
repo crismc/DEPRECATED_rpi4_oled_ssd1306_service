@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import math
 import time
 
 import Adafruit_GPIO.SPI as SPI
@@ -35,6 +36,8 @@ RST = None     # on the PiOLED this pin isnt used
 DC = 23
 SPI_PORT = 0
 SPI_DEVICE = 0
+
+RENDER_VIEW_SECONDS = 5
 
 # Beaglebone Black pin configuration:
 # RST = 'P9_12'
@@ -98,55 +101,150 @@ x = 0
 # Load default font.
 font = ImageFont.load_default()
 
+lineY = [
+    top, top, top+8, top+16, top+25
+]
+
 # Alternatively load a TTF font.  Make sure the .ttf font file is in the same directory as the python script!
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
 # font = ImageFont.truetype('Minecraftia.ttf', 8)
 
 def text(txt, line):
-    pos = top
-    if (line == 2):
-        pos = top+8
-    elif(line == 3):
-        pos = top+16
-    elif(line == 4):
-        pos = top+25
+    pos = lineY[line]
+    # if (line == 2):
+    #     pos = top+8
+    # elif(line == 3):
+    #     pos = top+16
+    # elif(line == 4):
+    #     pos = top+25
+    # else:
+    #     pos = top
 
     draw.text((x, pos), txt,  font=font, fill=255)
 
 def get_cmd(cmd):
     return subprocess.check_output(cmd, shell = True, encoding='utf-8').strip()
 
+def reset_clock():
+    return time.time() + RENDER_VIEW_SECONDS
+
+def renderTimeBreak():
+    return time.time() < timer
+
+class Scroller:
+    def __init__(self, text, offset = lineY[1], amplitude = 0, font = font, velocity = -2, draw_obj = draw, width = width):
+        self.text = text
+        self.draw = draw_obj
+        self.amplitude = amplitude
+        self.offset = offset
+        self.velocity = velocity
+        self.width = width
+        self.startpos = width
+        self.pos = width
+        self.font = font
+        self.maxwidth, unused = self.draw.textsize(self.text, font=self.font)
+
+    def render(self):
+        # Enumerate characters and draw them offset vertically based on a sine wave.
+        x = self.pos
+        
+        for i, c in enumerate(self.text):
+            # Stop drawing if off the right side of screen.
+            if x > self.width:
+                break
+
+            # Calculate width but skip drawing if off the left side of screen.
+            if x < -10:
+                char_width, char_height = self.draw.textsize(c, font=self.font)
+                x += char_width
+                continue
+
+            # Calculate offset from sine wave.
+            y = self.offset + math.floor(self.amplitude * math.sin(x / float(self.width) * 2.0 * math.pi))
+
+            # Draw text.
+            self.draw.text((x, y), c, font=self.font, fill=255)
+
+            # Increment x position based on chacacter width.
+            char_width, char_height = self.draw.textsize(c, font=self.font)
+            x += char_width
+
+    def move_for_next_frame(self, allow_startover):
+        self.pos += self.velocity
+        # Start over if text has scrolled completely off left side of screen.
+        if self.has_completed():
+            if allow_startover:
+                self.start_over()
+                return True
+            else:
+                return False
+        return True
+
+    def start_over(self):
+        self.pos = self.startpos
+
+    def has_completed(self):
+        return self.pos < -self.maxwidth
+
+
+timer = reset_clock()
+index = 0
+
+def render_stats():
+    while renderTimeBreak():
+        IP = get_cmd("hostname -I | cut -d\' \' -f1")
+        CPU = get_cmd("top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'")
+        MemUsage = get_cmd("free -m | awk 'NR==2{printf \"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'")
+        Disk = get_cmd("df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'")
+
+        # Clear image buffer by drawing a black filled box.
+        draw.rectangle((0,0,width,height), outline=0, fill=0)
+
+        # Write two lines of text.
+        text("IP: " + str(IP), 1)
+        text(CPU, 2)
+        text(MemUsage, 3)
+        text(Disk, 4)
+
+        # Display image.
+        disp.image(image)
+        disp.display()
+
+        time.sleep(0.1)
+
+def render_scroller():
+    hostname = get_cmd("hostname | cut -d\' \' -f1")
+    scroller = Scroller('Welcome to ' + hostname, height/2 - 4, height/4)
+
+    while True:
+        draw.rectangle((0,0,width,height), outline=0, fill=0)
+        scroller.render()
+        disp.image(image)
+        disp.display()
+
+        if not scroller.move_for_next_frame(renderTimeBreak()):
+            break
+
+        time.sleep(0.00000000000001)
+
+render_funcs = [
+    "render_stats",
+    "render_scroller"
+]
+
 while True:
+    render_func = render_funcs[index]
+    func_to_run = globals()[render_func]
 
     # Draw a black filled box to clear the image.
     draw.rectangle((0,0,width,height), outline=0, fill=0)
+    func_to_run()
 
-    IP = get_cmd("hostname -I | cut -d\' \' -f1")
-    CPU = get_cmd("top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'")
-    MemUsage = get_cmd("free -m | awk 'NR==2{printf \"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'")
-    Disk = get_cmd("df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'")
-    # Shell scripts for system monitoring from here : https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
-    # cmd = "hostname -I | cut -d\' \' -f1"
-    # IP = subprocess.check_output(cmd, shell = True )
-    # cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
-    # CPU = subprocess.check_output(cmd, shell = True )
-    # cmd = "free -m | awk 'NR==2{printf \"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
-    # MemUsage = subprocess.check_output(cmd, shell = True )
-    # cmd = "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"
-    # Disk = subprocess.check_output(cmd, shell = True )
+    if (index < (len(render_funcs) - 1)):
+        index = index + 1
+    else:
+        index = 0
 
-    # Write two lines of text.
-    text("IP: " + str(IP), 1)
-    text(CPU, 2)
-    text(MemUsage, 3)
-    text(Disk, 4)
+    timer = reset_clock()
 
-    # draw.text((x, top),       "IP: " + str(IP),  font=font, fill=255)
-    # draw.text((x, top+8),     str(CPU), font=font, fill=255)
-    # draw.text((x, top+16),    str(MemUsage),  font=font, fill=255)
-    # draw.text((x, top+25),    str(Disk),  font=font, fill=255)
-
-    # Display image.
-    disp.image(image)
-    disp.display()
     time.sleep(.1)
