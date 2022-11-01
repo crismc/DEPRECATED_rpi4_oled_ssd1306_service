@@ -15,7 +15,7 @@ Adafruit invests time and resources providing this open source code, please supp
 Hardware Setup
 --------------
 Pin setup:
-- PIN1 : Power (3.3V)
+- PIN1 : Power (3.3V / VCC)
 - PIN3: SDA (I2C Data)
 - PIN5: SCL (I2C Clock)
 - PIN14: Ground (0V)
