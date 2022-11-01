@@ -76,7 +76,7 @@ sudo crontab -e
 
 Scroll to the bottom and add the following line (after all the #'s):
 ```
-@reboot python /bin/your_script.py &
+@reboot python /bin/oled.py &
 ```
 The “&” at the end of the line means the command is run in the background and it won’t stop the system booting up.
 
