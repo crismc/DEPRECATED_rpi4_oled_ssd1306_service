@@ -37,7 +37,7 @@ DC = 23
 SPI_PORT = 0
 SPI_DEVICE = 0
 
-RENDER_VIEW_SECONDS = 5
+RENDER_VIEW_SECONDS = 20
 
 # Beaglebone Black pin configuration:
 # RST = 'P9_12'
@@ -132,15 +132,15 @@ def renderTimeBreak():
     return time.time() < timer
 
 class Scroller:
-    def __init__(self, text, offset = lineY[1], amplitude = 0, font = font, velocity = -2, draw_obj = draw, width = width):
+    def __init__(self, text, offset = lineY[1], startpos = width, amplitude = 0, font = font, velocity = -2, draw_obj = draw, width = width):
         self.text = text
         self.draw = draw_obj
         self.amplitude = amplitude
         self.offset = offset
         self.velocity = velocity
         self.width = width
-        self.startpos = width
-        self.pos = width
+        self.startpos = startpos
+        self.pos = startpos
         self.font = font
         self.maxwidth, unused = self.draw.textsize(self.text, font=self.font)
 
@@ -190,9 +190,33 @@ class Scroller:
 timer = reset_clock()
 index = 0
 
+def render_hostinfo():
+    VERSION = get_cmd("cat /etc/os-release | grep PRETTY_NAME | awk -F= '/PRETTY/ {print $2}'").strip("\"")
+    scroller = Scroller(VERSION, lineY[4], 0)
+    while renderTimeBreak():
+        HOST = get_cmd("hostname | cut -d\' \' -f1")
+        IP = get_cmd("hostname -I | cut -d\' \' -f1")
+        
+        # Clear image buffer by drawing a black filled box.
+        draw.rectangle((0,0,width,height), outline=0, fill=0)
+
+        # Write two lines of text.
+        text("HOST: " + str(HOST), 2)
+        text("IP: " + str(IP), 3)
+        scroller.render()
+
+        # Display image.
+        disp.image(image)
+        disp.display()
+
+        if not scroller.move_for_next_frame(renderTimeBreak()):
+            break
+
+        time.sleep(0.001)
+
 def render_stats():
     while renderTimeBreak():
-        IP = get_cmd("hostname -I | cut -d\' \' -f1")
+        # IP = get_cmd("hostname -I | cut -d\' \' -f1")
         CPU = get_cmd("top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'")
         MemUsage = get_cmd("free -m | awk 'NR==2{printf \"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'")
         Disk = get_cmd("df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'")
@@ -201,7 +225,7 @@ def render_stats():
         draw.rectangle((0,0,width,height), outline=0, fill=0)
 
         # Write two lines of text.
-        text("IP: " + str(IP), 1)
+        # text("IP: " + str(IP), 1)
         text(CPU, 2)
         text(MemUsage, 3)
         text(Disk, 4)
@@ -214,7 +238,7 @@ def render_stats():
 
 def render_scroller():
     hostname = get_cmd("hostname | cut -d\' \' -f1")
-    scroller = Scroller('Welcome to ' + hostname, height/2 - 4, height/4)
+    scroller = Scroller('Welcome to ' + hostname, height/2 - 4, width, height/4)
 
     while True:
         draw.rectangle((0,0,width,height), outline=0, fill=0)
@@ -225,9 +249,10 @@ def render_scroller():
         if not scroller.move_for_next_frame(renderTimeBreak()):
             break
 
-        time.sleep(0.00000000000001)
+        time.sleep(0.001)
 
 render_funcs = [
+    "render_hostinfo",
     "render_stats",
     "render_scroller"
 ]
