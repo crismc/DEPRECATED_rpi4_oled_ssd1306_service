@@ -56,6 +56,34 @@ cd examples
 python3 stats.py
 ```
 
+Start on boot
+
+Copy the python file to /etc:
+```
+sudo cp -ri Adafruit_Python_SSD1306 /etc
+```
+
+Create a sym link to the oled.py in /bin
+```
+sudo ln -s /etc/Adafruit_Python_SSD1306/oled/stats.py oled.py
+```
+
+Add A New Cron Job:
+```
+sudo crontab -e
+```
+
+Scroll to the bottom and add the following line (after all the #'s):
+```
+@reboot python /bin/your_script.py &
+```
+The “&” at the end of the line means the command is run in the background and it won’t stop the system booting up.
+
+Test it:
+```
+sudo reboot
+```
+
 Copying
 -------
 
