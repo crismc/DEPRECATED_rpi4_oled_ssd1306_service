@@ -20,7 +20,11 @@ Pin setup:
 - PIN5: SCL (I2C Clock)
 - PIN14: Ground (0V)
 
-Enable i2c and SPI on the Raspberry Pi using "sudo raspi-config"
+Enable i2c and SPI on the Raspberry Pi
+```
+sudo raspi-config
+# Interface Options > SPI and I2C
+```
 
 Installing
 ----------
@@ -39,6 +43,7 @@ Install Python3 dependencies
 sudo apt-get install python3-dev python3-smbus python3-pil python3-pip python3-setuptools python3-rpi.gpio
 ```
 
+Install this code
 ```
 git clone http://192.168.0.2:3000/personal/Adafruit_Python_SSD1306
 cd Adafruit_Python_SSD1306
