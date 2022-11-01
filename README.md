@@ -1,13 +1,10 @@
-*DEPRECATED LIBRARY* Adafruit Python SSD1306
+IC2 OLED controller for Raspberry PI
 =======================
 
-his library has been deprecated! We are leaving this up for historical and research purposes but archiving the repository.
+Original Repo: https://github.com/adafruit/Adafruit_Python_SSD1306
 
-We are now only supporting the use of our CircuitPython libraries for use with Python.
-
-Check out this guide for info on using OLEDs with the CircuitPython library: https://learn.adafruit.com/monochrome-oled-breakouts/python-wiring
-
----------------------------------------
+Adafruit Python SSD1306
+=======================
 
 Python library to use SSD1306-based 128x64 or 128x32 pixel OLED displays with a Raspberry Pi or Beaglebone Black.
 
@@ -15,15 +12,27 @@ Designed specifically to work with the Adafruit SSD1306-based OLED displays ----
 
 Adafruit invests time and resources providing this open source code, please support Adafruit and open-source hardware by purchasing products from Adafruit!
 
+Hardware Setup
+--------------
+Pin setup:
+- PIN1 : Power (3.3V)
+- PIN3: SDA (I2C Data)
+- PIN5: SCL (I2C Clock)
+- PIN14: Ground (0V)
+
+Enable i2c on the Raspberry Pi using "sudo raspi-config"
+
+Test I2C device is working:
+```
+$ i2cdetect -y 1
+```
+
 Installing
 ----------
-
+Initial apt-get installs:
 ```
-sudo python -m pip install --upgrade pip setuptools wheel
-sudo pip install Adafruit-SSD1306
+sudo apt-get install python3-dev python3-smbus i2c-tools python3-pil python3-pip python3-setuptools python3-rpi.gpio
 ```
-
-Or alternatively:
 
 ```
 sudo python -m pip install --upgrade pip setuptools wheel
