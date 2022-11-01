@@ -57,6 +57,7 @@ python3 stats.py
 ```
 
 Start on boot
+-------------
 
 Copy the python file to /etc:
 ```
