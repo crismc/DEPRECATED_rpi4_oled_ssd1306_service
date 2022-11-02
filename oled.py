@@ -252,9 +252,9 @@ def render_scroller():
         time.sleep(0.001)
 
 render_funcs = [
+    "render_scroller",
     "render_hostinfo",
-    "render_stats",
-    "render_scroller"
+    "render_stats"
 ]
 
 while True:

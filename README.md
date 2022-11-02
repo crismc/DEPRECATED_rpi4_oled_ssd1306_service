@@ -45,45 +45,42 @@ sudo apt-get install python3-dev python3-smbus python3-pil python3-pip python3-s
 
 Install this code
 ```
-git clone http://192.168.0.2:3000/personal/Adafruit_Python_SSD1306
-cd Adafruit_Python_SSD1306
+git clone http://192.168.0.2:3000/personal/oled_ssd1306
+cd oled_SSD1306
 sudo python setup.py install
 ```
 
 Test OLED
 ```
-cd examples
-python3 stats.py
+python3 oled.py
+```
+
+Create a service 
+-----------------
+
+Copy the repo file to /etc:
+```
+sudo cp -ri oled_ssd1306 /etc
+```
+
+Create a sym link of the service file in /etc/systemd/system, and reload it
+```
+sudo ln -s /etc/oled_ssd1306/oled.service /etc/systemd/system/oled.service
+sudo systemctl daemon-reload
+```
+
+Test it out
+```
+sudo service oled start
+sudo service oled stop
+sudo service oled restart
 ```
 
 Start on boot
--------------
-
-Copy the python file to /etc:
 ```
-sudo cp -ri Adafruit_Python_SSD1306 /etc
+sudo systemctl enable oled.service
 ```
 
-Create a sym link to the oled.py in /bin
-```
-sudo ln -s /etc/Adafruit_Python_SSD1306/oled/stats.py oled.py
-```
-
-Add A New Cron Job:
-```
-sudo crontab -e
-```
-
-Scroll to the bottom and add the following line (after all the #'s):
-```
-@reboot python /bin/oled.py &
-```
-The “&” at the end of the line means the command is run in the background and it won’t stop the system booting up.
-
-Test it:
-```
-sudo reboot
-```
 
 Copying
 -------
