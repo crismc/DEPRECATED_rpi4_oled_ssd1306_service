@@ -107,7 +107,7 @@ lineY = [
 ]
 
 lineY_large = [
-    top, top, top+8, top+24, top+32
+    top, top, top+10, top+24, top+32
 ]
 
 # Alternatively load a TTF font.  Make sure the .ttf font file is in the same directory as the python script!
@@ -255,9 +255,9 @@ def render_scroller():
         time.sleep(0.001)
 
 render_funcs = [
-    "render_scroller"
-    # "render_hostinfo",
-    # "render_stats"
+    "render_scroller",
+    "render_hostinfo",
+    "render_stats"
 ]
 
 while True:
