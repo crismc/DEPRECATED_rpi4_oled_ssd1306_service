@@ -20,6 +20,7 @@
 # THE SOFTWARE.
 import math
 import time
+import pathlib
 
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_SSD1306
@@ -105,22 +106,24 @@ lineY = [
     top, top, top+8, top+16, top+25
 ]
 
+lineY_large = [
+    top, top, top+8, top+24, top+32
+]
+
 # Alternatively load a TTF font.  Make sure the .ttf font file is in the same directory as the python script!
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
-# font = ImageFont.truetype('Minecraftia.ttf', 8)
+current_dir = pathlib.Path(__file__).parent.resolve()
+font_large = ImageFont.truetype(str(current_dir) + '/vcr_osd_mono.ttf', 14)
 
-def text(txt, line):
-    pos = lineY[line]
-    # if (line == 2):
-    #     pos = top+8
-    # elif(line == 3):
-    #     pos = top+16
-    # elif(line == 4):
-    #     pos = top+25
-    # else:
-    #     pos = top
+def text(txt, line, is_large = False):
+    if (is_large):
+        pos = lineY_large[line]
+        display_font = font_large
+    else:
+        pos = lineY[line]
+        display_font = font
 
-    draw.text((x, pos), txt,  font=font, fill=255)
+    draw.text((x, pos), txt,  font=display_font, fill=255)
 
 def get_cmd(cmd):
     return subprocess.check_output(cmd, shell = True, encoding='utf-8').strip()
@@ -201,8 +204,8 @@ def render_hostinfo():
         draw.rectangle((0,0,width,height), outline=0, fill=0)
 
         # Write two lines of text.
-        text("HOST: " + str(HOST), 2)
-        text("IP: " + str(IP), 3)
+        text("HOST: " + str(HOST), 1)
+        text("IP: " + str(IP), 2, font_large)
         scroller.render()
 
         # Display image.
@@ -238,7 +241,7 @@ def render_stats():
 
 def render_scroller():
     hostname = get_cmd("hostname | cut -d\' \' -f1")
-    scroller = Scroller('Welcome to ' + hostname, height/2 - 4, width, height/4)
+    scroller = Scroller('Welcome to ' + hostname, height/2 - 4, width, height/4, font_large)
 
     while True:
         draw.rectangle((0,0,width,height), outline=0, fill=0)
@@ -252,9 +255,9 @@ def render_scroller():
         time.sleep(0.001)
 
 render_funcs = [
-    "render_scroller",
-    "render_hostinfo",
-    "render_stats"
+    "render_scroller"
+    # "render_hostinfo",
+    # "render_stats"
 ]
 
 while True:
