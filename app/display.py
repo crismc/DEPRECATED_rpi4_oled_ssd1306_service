@@ -13,6 +13,7 @@ import time
 import sys, getopt
 import subprocess
 import json
+import pathlib
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
@@ -33,6 +34,7 @@ DURATION = 5
 # The first two parameters are the pixel width and pixel height.  Change these to the right size for your display!
 RST = None
 disp = SSD1306.SSD1306_128_32(rst=RST)
+current_dir = str(pathlib.Path(__file__).parent.resolve())
 
 # Clear display.
 disp.begin()
@@ -59,11 +61,11 @@ small = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 8)
 smaller = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 7)
 
 
-img_network = Image.open(r"./img/ip-network.png") 
-img_mem = Image.open(r"./img/database.png") 
-img_disk = Image.open(r"./img/database-outline.png") 
-img_ha_logo = m = Image.open(r"./img/home-assistant-logo.png") 
-img_cpu_64 = Image.open(r"./img/cpu-64-bit.png") 
+img_network = Image.open(r"" + current_dir + "/img/ip-network.png") 
+img_mem = Image.open(r"" + current_dir + "/img/database.png") 
+img_disk = Image.open(r"" + current_dir + "/img/database-outline.png") 
+img_ha_logo = m = Image.open(r"" + current_dir + "/img/home-assistant-logo.png") 
+img_cpu_64 = Image.open(r"" + current_dir + "/img/cpu-64-bit.png") 
 
 
 def start():
