@@ -6,7 +6,7 @@ Wants=network-pre.target
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/bin/python3 /etc/oled_ssd1306/app/oled.py
+ExecStart=/usr/bin/python3 /etc/oled_ssd1306/app/display.py
 
 [Install]
 WantedBy=basic.target

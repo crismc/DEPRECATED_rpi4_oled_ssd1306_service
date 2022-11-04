@@ -22,7 +22,7 @@ import SSD1306
 ## Global Variables
 # Default set, but can be overridden by config in addon setup.
 TEMP_UNIT = "C"
-SHOW_SPLASH = True
+SHOW_SPLASH = False
 SHOW_CPU = True
 SHOW_NETWORK = True
 SHOW_MEMORY = True
@@ -35,8 +35,9 @@ RST = None
 disp = SSD1306.SSD1306_128_32(rst=RST)
 
 # Clear display.
-disp.fill(0)
-disp.show()
+disp.begin()
+disp.clear()
+disp.display()
 
 # Create blank image for drawing.
 # Make sure to create image with mode '1' for 1-bit color.
@@ -92,7 +93,7 @@ def show_storage():
     #image.save(r"./img/examples/storage.png")    
 
     disp.image(image)
-    disp.show()
+    disp.display()
     time.sleep(DURATION)  
 
 def show_memory():
@@ -114,7 +115,7 @@ def show_memory():
     #image.save(r"./img/examples/memory.png")   
 
     disp.image(image)
-    disp.show()
+    disp.display()
     time.sleep(DURATION) 
 
 
@@ -147,17 +148,19 @@ def show_cpu_temp():
     #image.save(r"./img/examples/cpu.png")
     
     disp.image(image)
-    disp.show()
+    disp.display()
     time.sleep(DURATION)
 
 
 def show_network():
-    host_info = hassos_get_info('host/info')
-    hostname = host_info['data']['hostname'].upper()
+    #host_info = hassos_get_info('host/info')
+    #hostname = host_info['data']['hostname'].upper()
 
-    network_info = hassos_get_info('network/info')
-    ipv4 = network_info['data']['interfaces'][0]['ipv4']['address'][0].split("/")[0]
+    #network_info = hassos_get_info('network/info')
+    #ipv4 = network_info['data']['interfaces'][0]['ipv4']['address'][0].split("/")[0]
 
+    hostname = shell_cmd("hostname | cut -d\' \' -f1")
+    ipv4 = shell_cmd("hostname -I | cut -d\' \' -f1")
     mac = shell_cmd("cat /sys/class/net/eth0/address")
 
     # Clear Canvas
@@ -174,7 +177,7 @@ def show_network():
     #image.save(r"./img/examples/network.png")
 
     disp.image(image)
-    disp.show()
+    disp.display()
     time.sleep(DURATION)
 
 def get_text_center(text, font, center_point):
@@ -223,7 +226,7 @@ def show_splash():
     # Display Image to OLED
     #image.save(r"./img/examples/splash.png")
     disp.image(image)
-    disp.show() 
+    disp.display() 
     time.sleep(DURATION)
 
 
@@ -237,7 +240,7 @@ def shell_cmd(cmd):
 
 def clear_display():
     disp.fill(0)
-    disp.show()
+    disp.display()
 
 if __name__ == "__main__":
     start()
