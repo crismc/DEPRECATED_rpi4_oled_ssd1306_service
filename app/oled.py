@@ -113,7 +113,7 @@ lineY_large = [
 # Alternatively load a TTF font.  Make sure the .ttf font file is in the same directory as the python script!
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
 current_dir = pathlib.Path(__file__).parent.resolve()
-font_large = ImageFont.truetype(str(current_dir) + '/vcr_osd_mono.ttf', 14)
+font_large = ImageFont.truetype(str(current_dir) + '/fonts/vcr_osd_mono.ttf', 14)
 
 def text(txt, line, is_large = False):
     if (is_large):
