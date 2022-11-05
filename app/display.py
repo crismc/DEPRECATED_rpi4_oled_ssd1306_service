@@ -38,6 +38,11 @@ SCREEN_OPT_RENDERER = 'RENDERER'
 SCREEN_OPT_DURATION = 'DURATION'
 
 screens = {
+    SCREEN_WELCOME: {
+        SCREEN_OPT_SHOW: True,
+        SCREEN_OPT_LIMIT: 10,
+        SCREEN_OPT_RENDERER: "render_welcome"
+    },
     SCREEN_SPLASH: {
         SCREEN_OPT_SHOW: False,
         SCREEN_OPT_LIMIT: None,
@@ -63,12 +68,7 @@ screens = {
         SCREEN_OPT_SHOW: True,
         SCREEN_OPT_LIMIT: None,
         SCREEN_OPT_RENDERER: "render_storage"
-    },
-    SCREEN_WELCOME: {
-        SCREEN_OPT_SHOW: True,
-        SCREEN_OPT_LIMIT: 10,
-        SCREEN_OPT_RENDERER: "render_welcome"
-    },
+    }
 }
 
 DEFAULT_DURATION = 10
@@ -114,7 +114,7 @@ run_main_loop = True
 
 def start():
     while run_main_loop:
-        for name, config in screens:            
+        for name, config in screens.items():
             if run_main_loop and show_screen(name):
                 func_to_run = globals()[config[SCREEN_OPT_RENDERER]]
                 func_to_run(config)
@@ -298,7 +298,7 @@ def shell_cmd(cmd):
 def get_duration(screen):
     if screen in screens:
         config = screens[screen]
-        return config[SCREEN_OPT_DURATION] if SCREEN_OPT_DURATION in config[SCREEN_OPT_DURATION] else DEFAULT_DURATION
+        return config[SCREEN_OPT_DURATION] if SCREEN_OPT_DURATION in config else DEFAULT_DURATION
     return DEFAULT_DURATION
 
 def show_screen(screen):
@@ -307,10 +307,11 @@ def show_screen(screen):
             if screens[screen][SCREEN_OPT_LIMIT]:
                 if SCREEN_OPT_LIMITREMAINING not in screens[screen]:
                     screens[screen][SCREEN_OPT_LIMITREMAINING] = screens[screen][SCREEN_OPT_LIMIT]
-                
                 if SCREEN_OPT_LIMITREMAINING in screens[screen]:
-                    screens[screen][SCREEN_OPT_LIMITREMAINING] = screens[screen][SCREEN_OPT_LIMITREMAINING] - 1
-                    if not screens[screen][SCREEN_OPT_LIMITREMAINING]:
+                    if screens[screen][SCREEN_OPT_LIMITREMAINING]:
+                        screens[screen][SCREEN_OPT_LIMITREMAINING] = screens[screen][SCREEN_OPT_LIMITREMAINING] - 1
+                        return True
+                    else:
                         return False
             
             return True
@@ -319,6 +320,7 @@ def show_screen(screen):
 
     print("Screen " + screen + " is not configured")
     return False
+
 class Scroller:
     def __init__(self, text, offset = 12, startpos = width, amplitude = 0, font = large, velocity = -2, draw_obj = draw, width = width):
         self.text = text
