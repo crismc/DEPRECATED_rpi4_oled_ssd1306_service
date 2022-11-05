@@ -38,15 +38,15 @@ SCREEN_OPT_RENDERER = 'RENDERER'
 SCREEN_OPT_DURATION = 'DURATION'
 
 screens = {
+    SCREEN_SPLASH: {
+        SCREEN_OPT_SHOW: True,
+        SCREEN_OPT_LIMIT: None,
+        SCREEN_OPT_RENDERER: "render_splash"
+    },
     SCREEN_WELCOME: {
         SCREEN_OPT_SHOW: True,
         SCREEN_OPT_LIMIT: 10,
         SCREEN_OPT_RENDERER: "render_welcome"
-    },
-    SCREEN_SPLASH: {
-        SCREEN_OPT_SHOW: False,
-        SCREEN_OPT_LIMIT: None,
-        SCREEN_OPT_RENDERER: "render_splash"
     },
     SCREEN_CPU: {
         SCREEN_OPT_SHOW: True,
@@ -111,6 +111,7 @@ img_ha_logo = m = Image.open(r"" + current_dir + "/img/home-assistant-logo.png")
 img_cpu_64 = Image.open(r"" + current_dir + "/img/cpu-64-bit.png") 
 
 run_main_loop = True
+home_assistant = None
 
 def start():
     while run_main_loop:
@@ -221,9 +222,10 @@ def render_network(config):
     time.sleep(get_duration(SCREEN_NETWORK))
 
 def render_splash(config):
-    os_info = hassos_get_info('os/info')    
+    os_info = hassos_get_info('os/info')
     os_version = os_info['data']['version']
     os_upgrade = os_info['data']['update_available']  
+
     if (os_upgrade == True):
         os_version = os_version + "*"
 
@@ -232,7 +234,6 @@ def render_splash(config):
     core_upgrade = os_info['data']['update_available']
     if (core_upgrade == True):
         core_version =  core_version + "*"
-
 
     # Draw a padded black filled box with style.border width.
     draw.rectangle((0, 0, width, height), outline=0, fill=0)
@@ -248,12 +249,18 @@ def render_splash(config):
 
     ln1 = "Home Assistant"
     ln1_x = get_text_center(ln1, p_bold, 78)
-    draw.text((ln1_x, 4), ln1, font=p_bold, fill=255)
+    draw.text((ln1_x, 2), ln1, font=p_bold, fill=255)
 
     # Write Test, Eventually will get from HA API.
-    ln2 = 'OS '+ os_version + ' - ' + core_version
-    ln2_x = get_text_center(ln2, small, 78)
-    draw.text((ln2_x, 20), ln2, font=small, fill=255)
+    ln2 = []
+    if os_version:
+        ln2.append('OS '+ os_version)
+    if core_version:
+        ln2.append(core_version)
+
+    ln2 = ' - '.join(ln2)
+    ln2_x = get_text_center(ln2, medium, 78)
+    draw.text((ln2_x, 18), ln2, font=medium, fill=255)
 
 
     # Display Image to OLED
@@ -286,8 +293,9 @@ def get_text_center(text, font, center_point):
     return (center_point -(w/2))
 
 def hassos_get_info(type):
-    info = shell_cmd('curl -sSL -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/' + type)
-    return json.loads(info)
+    ha = get_ha()
+    if ha.ha_exists():
+        return ha.query(type)
 
 def get_hostname(opt = ""):
     return shell_cmd("hostname " + opt + "| cut -d\' \' -f1")
@@ -320,6 +328,52 @@ def show_screen(screen):
 
     print("Screen " + screen + " is not configured")
     return False
+
+def get_ha():
+    home_assistant = HomeAssistant()
+    return home_assistant
+
+class HomeAssistant:
+    def __init__(self):
+        self.token = None
+        self.container = None
+        self.container_name = "raspberrypi4-64-homeassistant"
+        self.env_var = "SUPERVISOR_TOKEN"
+        self.loaded_token = False
+        self.loaded_container = False
+
+    def _run(self, cmd):
+        return subprocess.check_output(cmd, shell=True).decode("utf-8")
+
+    def get_container(self):
+        if not self.container and not self.loaded_container:
+            self.loaded_container = True
+            container_id = self._run("docker ps | grep " + self.container_name + " | cut -d\' \' -f1").strip()
+            if container_id:
+                self.container = container_id
+        return self.container
+
+    def get_token(self):
+        if not self.token and not self.loaded_token:
+            self.loaded_token = True
+            container_id = self.get_container()
+            if container_id:
+                token = self._run("docker exec " + container_id + " printenv " + self.env_var).strip()
+                if token:
+                    self.token = token
+
+        return self.token
+
+    def ha_exists(self):
+        return bool(self.get_token())
+
+    def query(self, endpoint):
+        container_id = self.get_container()
+        token = self.get_token()
+        if container_id and token:
+            info = shell_cmd("docker exec " + container_id + " curl -sSL -H \"Authorization: Bearer " + token + "\" http://supervisor/" + endpoint)
+            if info:
+                return json.loads(info)
 
 class Scroller:
     def __init__(self, text, offset = 12, startpos = width, amplitude = 0, font = large, velocity = -2, draw_obj = draw, width = width):
@@ -375,6 +429,7 @@ class Scroller:
 
     def has_completed(self):
         return self.pos < -self.maxwidth
+
 
 if __name__ == "__main__":
     start()
