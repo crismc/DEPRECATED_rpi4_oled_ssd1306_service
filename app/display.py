@@ -248,8 +248,6 @@ def show_scroller():
         if not scroller.move_for_next_frame(renderTimeBreak()):
             break
 
-        time.sleep(0.001)
-
 def hassos_get_info(type):
     info = shell_cmd('curl -sSL -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/' + type)
     return json.loads(info)
