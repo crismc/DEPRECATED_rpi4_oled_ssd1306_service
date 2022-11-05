@@ -29,7 +29,7 @@ SHOW_NETWORK = True
 SHOW_MEMORY = True
 SHOW_STORAGE = True
 SHOW_SCROLLER = True
-DURATION = 5
+DURATION = 10
 
 # Create the SSD1306 OLED class.
 # The first two parameters are the pixel width and pixel height.  Change these to the right size for your display!
@@ -59,7 +59,8 @@ p = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 9)
 p_bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 9)
 small = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 8)
 smaller = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 7)
-large = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 14)
+medium = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 14)
+large = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 18)
 
 img_network = Image.open(r"" + current_dir + "/img/ip-network.png") 
 img_mem = Image.open(r"" + current_dir + "/img/database.png") 
@@ -71,9 +72,9 @@ def start():
     while True:        
         if (SHOW_SPLASH) : show_splash()
         if (SHOW_SCROLLER) : show_scroller()
+        if (SHOW_NETWORK) : show_network()
         if (SHOW_CPU) : show_cpu_temp()
         if (SHOW_MEMORY) : show_memory()
-        if (SHOW_NETWORK) : show_network()
         if (SHOW_STORAGE) : show_storage()
 
         timer = reset_clock()
@@ -165,18 +166,18 @@ def show_network():
 
     hostname = shell_cmd("hostname | cut -d\' \' -f1")
     ipv4 = shell_cmd("hostname -I | cut -d\' \' -f1")
-    mac = shell_cmd("cat /sys/class/net/eth0/address")
+    #mac = shell_cmd("cat /sys/class/net/eth0/address")
 
     # Clear Canvas
     draw.rectangle((0,0,128,32), outline=0, fill=0)
 
     # Resize and merge icon to Canvas
-    icon = img_network.resize([26,26])  
-    image.paste(icon,(-2,3))
+    icon = img_network.resize([13,13])
+    image.paste(icon,(-2,0))
 
-    draw.text((29, 0), "HOST " + hostname, font=small, fill=255)
-    draw.text((29, 11), "IP4 " + ipv4, font=small, fill=255)    
-    draw.text((29, 21), "MAC " + mac.upper(), font=small, fill=255)    
+    draw.text((18, 0), hostname, font=medium, fill=255)
+    draw.text((0, 18), "IP4 " + ipv4, font=medium, fill=255)    
+    #draw.text((29, 21), "MAC " + mac.upper(), font=small, fill=255)    
 
     #image.save(r"./img/examples/network.png")
 
@@ -266,6 +267,7 @@ def reset_clock():
 
 def renderTimeBreak():
     return time.time() < timer
+
 class Scroller:
     def __init__(self, text, offset = 12, startpos = width, amplitude = 0, font = large, velocity = -2, draw_obj = draw, width = width):
         self.text = text
