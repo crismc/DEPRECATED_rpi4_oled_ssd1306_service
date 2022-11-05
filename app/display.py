@@ -38,26 +38,26 @@ SCREEN_OPT_RENDERER = 'RENDERER'
 SCREEN_OPT_DURATION = 'DURATION'
 
 screens = {
-    SCREEN_SPLASH: {
-        SCREEN_OPT_SHOW: True,
-        SCREEN_OPT_LIMIT: None,
-        SCREEN_OPT_RENDERER: "render_splash"
-    },
     SCREEN_WELCOME: {
         SCREEN_OPT_SHOW: True,
         SCREEN_OPT_LIMIT: 10,
         SCREEN_OPT_RENDERER: "render_welcome"
     },
-    SCREEN_CPU: {
+    SCREEN_SPLASH: {
         SCREEN_OPT_SHOW: True,
         SCREEN_OPT_LIMIT: None,
-        SCREEN_OPT_RENDERER: "render_cpu_temp"
+        SCREEN_OPT_RENDERER: "render_splash"
     },
     SCREEN_NETWORK: {
         SCREEN_OPT_SHOW: True,
         SCREEN_OPT_LIMIT: None,
         SCREEN_OPT_RENDERER: "render_network",
         SCREEN_OPT_DURATION: 20
+    },
+    SCREEN_CPU: {
+        SCREEN_OPT_SHOW: True,
+        SCREEN_OPT_LIMIT: None,
+        SCREEN_OPT_RENDERER: "render_cpu_temp"
     },
     SCREEN_MEMORY: {
         SCREEN_OPT_SHOW: True,
