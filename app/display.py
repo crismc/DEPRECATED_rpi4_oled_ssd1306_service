@@ -235,9 +235,10 @@ def show_splash():
 
 
 def show_scroller():
+    hostname = shell_cmd("hostname | cut -d\' \' -f1")
+    scroller = Scroller('Welcome to ' + hostname, height/2 - 4, width, height/4, large)
+    
     while True:
-        hostname = shell_cmd("hostname | cut -d\' \' -f1")
-        scroller = Scroller('Welcome to ' + hostname, height/2 - 4, width, height/4, large)
         draw.rectangle((0,0,width,height), outline=0, fill=0)
         scroller.render()
         disp.image(image)
