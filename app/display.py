@@ -28,6 +28,7 @@ SHOW_CPU = True
 SHOW_NETWORK = True
 SHOW_MEMORY = True
 SHOW_STORAGE = True
+SHOW_SCROLLER = True
 DURATION = 5
 
 # Create the SSD1306 OLED class.
@@ -52,14 +53,13 @@ image = Image.new("1", (width, height))
 # Get drawing object to draw on image.
 draw = ImageDraw.Draw(image)
 
-
 # Load default font.
 # font = ImageFont.load_default()
 p = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 9)
 p_bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 9)
 small = ImageFont.truetype("usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 8)
 smaller = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 7)
-
+large = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 14)
 
 img_network = Image.open(r"" + current_dir + "/img/ip-network.png") 
 img_mem = Image.open(r"" + current_dir + "/img/database.png") 
@@ -67,14 +67,16 @@ img_disk = Image.open(r"" + current_dir + "/img/database-outline.png")
 img_ha_logo = m = Image.open(r"" + current_dir + "/img/home-assistant-logo.png") 
 img_cpu_64 = Image.open(r"" + current_dir + "/img/cpu-64-bit.png") 
 
-
 def start():
     while True:        
         if (SHOW_SPLASH) : show_splash()
+        if (SHOW_SCROLLER) : show_scroller()
         if (SHOW_CPU) : show_cpu_temp()
         if (SHOW_MEMORY) : show_memory()
         if (SHOW_NETWORK) : show_network()
         if (SHOW_STORAGE) : show_storage()
+
+        timer = reset_clock()
         
 
 def show_storage():
@@ -232,6 +234,20 @@ def show_splash():
     time.sleep(DURATION)
 
 
+def show_scroller():
+    while True:
+        hostname = shell_cmd("hostname | cut -d\' \' -f1")
+        scroller = Scroller('Welcome to ' + hostname, height/2 - 4, width, height/4, large)
+        draw.rectangle((0,0,width,height), outline=0, fill=0)
+        scroller.render()
+        disp.image(image)
+        disp.display()
+
+        if not scroller.move_for_next_frame(renderTimeBreak()):
+            break
+
+        time.sleep(0.001)
+
 def hassos_get_info(type):
     info = shell_cmd('curl -sSL -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/' + type)
     return json.loads(info)
@@ -243,6 +259,68 @@ def shell_cmd(cmd):
 def clear_display():
     disp.fill(0)
     disp.display()
+
+def reset_clock():
+    return time.time() + DURATION
+
+def renderTimeBreak():
+    return time.time() < timer
+class Scroller:
+    def __init__(self, text, offset = 12, startpos = width, amplitude = 0, font = large, velocity = -2, draw_obj = draw, width = width):
+        self.text = text
+        self.draw = draw_obj
+        self.amplitude = amplitude
+        self.offset = offset
+        self.velocity = velocity
+        self.width = width
+        self.startpos = startpos
+        self.pos = startpos
+        self.font = font
+        self.maxwidth, unused = self.draw.textsize(self.text, font=self.font)
+
+    def render(self):
+        # Enumerate characters and draw them offset vertically based on a sine wave.
+        x = self.pos
+        
+        for i, c in enumerate(self.text):
+            # Stop drawing if off the right side of screen.
+            if x > self.width:
+                break
+
+            # Calculate width but skip drawing if off the left side of screen.
+            if x < -10:
+                char_width, char_height = self.draw.textsize(c, font=self.font)
+                x += char_width
+                continue
+
+            # Calculate offset from sine wave.
+            y = self.offset + math.floor(self.amplitude * math.sin(x / float(self.width) * 2.0 * math.pi))
+
+            # Draw text.
+            self.draw.text((x, y), c, font=self.font, fill=255)
+
+            # Increment x position based on chacacter width.
+            char_width, char_height = self.draw.textsize(c, font=self.font)
+            x += char_width
+
+    def move_for_next_frame(self, allow_startover):
+        self.pos += self.velocity
+        # Start over if text has scrolled completely off left side of screen.
+        if self.has_completed():
+            if allow_startover:
+                self.start_over()
+                return True
+            else:
+                return False
+        return True
+
+    def start_over(self):
+        self.pos = self.startpos
+
+    def has_completed(self):
+        return self.pos < -self.maxwidth
+
+timer = reset_clock()
 
 if __name__ == "__main__":
     start()
