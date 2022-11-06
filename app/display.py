@@ -254,7 +254,7 @@ def render_static(text = None, font = medium):
     draw.rectangle((0,0,width,height), outline=0, fill=0)
     if text:
         x = get_text_center(text, font)
-        draw.text((x, 4), text, font=font, fill=255)
+        draw.text((x, 12), text, font=font, fill=255)
     disp.image(image)
     disp.display()
 
