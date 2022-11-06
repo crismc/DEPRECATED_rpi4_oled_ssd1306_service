@@ -10,7 +10,7 @@
 import math
 from os import stat
 import time
-import sys, getopt
+import configparser
 import subprocess
 import json
 import pathlib
@@ -22,62 +22,23 @@ import SSD1306
 
 ## Global Variables
 # Default set, but can be overridden by config in addon setup.
-TEMP_UNIT = "C"
-
-SCREEN_SPLASH = 'SPLASH'
-SCREEN_CPU = 'CPU'
-SCREEN_NETWORK = 'NETWORK'
-SCREEN_MEMORY = 'MEMORY'
-SCREEN_STORAGE = 'STORAGE'
-SCREEN_WELCOME = 'WELCOME'
-
-SCREEN_OPT_SHOW = 'SHOW'
-SCREEN_OPT_LIMIT = 'LIMIT'
-SCREEN_OPT_LIMITREMAINING = 'LIMIT_REMAINING'
-SCREEN_OPT_RENDERER = 'RENDERER'
-SCREEN_OPT_DURATION = 'DURATION'
-
-screens = {
-    SCREEN_SPLASH: {
-        SCREEN_OPT_SHOW: True,
-        SCREEN_OPT_LIMIT: None,
-        SCREEN_OPT_RENDERER: "render_splash"
-    },
-    SCREEN_WELCOME: {
-        SCREEN_OPT_SHOW: True,
-        SCREEN_OPT_LIMIT: 10,
-        SCREEN_OPT_RENDERER: "render_welcome"
-    },
-    SCREEN_CPU: {
-        SCREEN_OPT_SHOW: True,
-        SCREEN_OPT_LIMIT: None,
-        SCREEN_OPT_RENDERER: "render_cpu_temp"
-    },
-    SCREEN_NETWORK: {
-        SCREEN_OPT_SHOW: True,
-        SCREEN_OPT_LIMIT: None,
-        SCREEN_OPT_RENDERER: "render_network",
-        SCREEN_OPT_DURATION: 20
-    },
-    SCREEN_MEMORY: {
-        SCREEN_OPT_SHOW: True,
-        SCREEN_OPT_LIMIT: None,
-        SCREEN_OPT_RENDERER: "render_memory"
-    },
-    SCREEN_STORAGE: {
-        SCREEN_OPT_SHOW: True,
-        SCREEN_OPT_LIMIT: None,
-        SCREEN_OPT_RENDERER: "render_storage"
-    }
-}
-
+DEFAULT_TEMP_UNIT = "C"
 DEFAULT_DURATION = 10
+
+SCREEN_OPT_TEMP_UNIT = 'temp_unit'
+SCREEN_OPT_SHOW = 'show'
+SCREEN_OPT_LIMIT = 'limit'
+SCREEN_OPT_RENDERER = 'renderer'
+SCREEN_OPT_DURATION = 'duration'
+SCREEN_OPT_LIMITREMAINING = 'limit_remaining'
 
 # Create the SSD1306 OLED class.
 # The first two parameters are the pixel width and pixel height.  Change these to the right size for your display!
 RST = None
 disp = SSD1306.SSD1306_128_32(rst=RST)
 current_dir = str(pathlib.Path(__file__).parent.resolve())
+
+CONF_FILE = current_dir + "/config.conf"
 
 # Clear display.
 disp.begin()
@@ -114,10 +75,16 @@ run_main_loop = True
 home_assistant = None
 
 def start():
+    config = configparser.ConfigParser()
+    config.read(CONF_FILE)
+
+    screens = [x for x in config.sections() if x.lower() != 'default']
+
     while run_main_loop:
-        for name, config in screens.items():
-            if run_main_loop and show_screen(name):
-                func_to_run = globals()[config[SCREEN_OPT_RENDERER]]
+        for screen in screens:
+            section_config = config[screen]
+            if run_main_loop and show_screen(section_config):
+                func_to_run = globals()[section_config.get(SCREEN_OPT_RENDERER)]
                 func_to_run(config)
 
 def render_storage(config):
@@ -139,7 +106,7 @@ def render_storage(config):
 
     disp.image(image)
     disp.display()
-    time.sleep(get_duration(SCREEN_STORAGE))  
+    time.sleep(get_duration(config))  
 
 def render_memory(config):
     mem = shell_cmd("free -m | awk 'NR==2{printf \"%.1f,%.1f,%.0f%%\", $3/1000,$2/1000,$3*100/$2 }'")
@@ -160,7 +127,7 @@ def render_memory(config):
 
     disp.image(image)
     disp.display()
-    time.sleep(get_duration(SCREEN_MEMORY)) 
+    time.sleep(get_duration(config)) 
 
 def render_cpu_temp(config):
     #host_info = hassos_get_info('host/info')
@@ -169,7 +136,7 @@ def render_cpu_temp(config):
     uptime = shell_cmd("uptime | grep -ohe 'up .*' | sed 's/,//g' | awk '{ print $2" "$3 }'")
 
     # Check temapture unit and convert if required.
-    if (TEMP_UNIT == 'C'): 
+    if (config.get(SCREEN_OPT_TEMP_UNIT, DEFAULT_TEMP_UNIT).lower() == 'C'): 
         temp = "%0.2f °C " % (temp)
     else:
         temp = "%0.2f °F " % (temp * 9.0 / 5.0 + 32)
@@ -190,7 +157,7 @@ def render_cpu_temp(config):
     
     disp.image(image)
     disp.display()
-    time.sleep(get_duration(SCREEN_CPU))
+    time.sleep(get_duration(config))
 
 def render_network(config):
     #host_info = hassos_get_info('host/info')
@@ -219,7 +186,7 @@ def render_network(config):
 
     disp.image(image)
     disp.display()
-    time.sleep(get_duration(SCREEN_NETWORK))
+    time.sleep(get_duration(config))
 
 def render_splash(config):
     os_info = hassos_get_info('os/info')
@@ -267,12 +234,12 @@ def render_splash(config):
     #image.save(r"./img/examples/splash.png")
     disp.image(image)
     disp.display() 
-    time.sleep(get_duration(SCREEN_SPLASH))
+    time.sleep(get_duration(config))
 
 def render_welcome(config):
     hostname = get_hostname()
     scroller = Scroller('Welcome to ' + hostname, height/2 - 4, width, height/4, large)
-    timer = time.time() + get_duration(SCREEN_WELCOME)
+    timer = time.time() + get_duration(config)
     while True:
         draw.rectangle((0,0,width,height), outline=0, fill=0)
         scroller.render()
@@ -303,21 +270,20 @@ def get_hostname(opt = ""):
 def shell_cmd(cmd):
     return subprocess.check_output(cmd, shell=True).decode("utf-8")
 
-def get_duration(screen):
-    if screen in screens:
-        config = screens[screen]
-        return config[SCREEN_OPT_DURATION] if SCREEN_OPT_DURATION in config else DEFAULT_DURATION
+def get_duration(config):
+    if config.has_option(SCREEN_OPT_DURATION):
+        return config.getint(SCREEN_OPT_DURATION, DEFAULT_DURATION)
     return DEFAULT_DURATION
 
-def show_screen(screen):
-    if screen in screens:
-        if screens[screen][SCREEN_OPT_SHOW]:
-            if screens[screen][SCREEN_OPT_LIMIT]:
-                if SCREEN_OPT_LIMITREMAINING not in screens[screen]:
-                    screens[screen][SCREEN_OPT_LIMITREMAINING] = screens[screen][SCREEN_OPT_LIMIT]
-                if SCREEN_OPT_LIMITREMAINING in screens[screen]:
-                    if screens[screen][SCREEN_OPT_LIMITREMAINING]:
-                        screens[screen][SCREEN_OPT_LIMITREMAINING] = screens[screen][SCREEN_OPT_LIMITREMAINING] - 1
+def show_screen(config):
+    if config.has_option(SCREEN_OPT_RENDERER):
+        if config.getboolean(SCREEN_OPT_SHOW):
+            if config.has_option(SCREEN_OPT_LIMIT):
+                if not config.has_option(SCREEN_OPT_LIMITREMAINING):
+                    config.set(SCREEN_OPT_LIMITREMAINING, config.getint(SCREEN_OPT_LIMIT))
+                if config.has_option(SCREEN_OPT_LIMITREMAINING):
+                    if config.getint(SCREEN_OPT_LIMITREMAINING):
+                        config.set(SCREEN_OPT_LIMITREMAINING, config.getint(SCREEN_OPT_LIMITREMAINING) - 1)
                         return True
                     else:
                         return False
@@ -326,7 +292,6 @@ def show_screen(screen):
         else:
             return False
 
-    print("Screen " + screen + " is not configured")
     return False
 
 def get_ha():
@@ -429,7 +394,6 @@ class Scroller:
 
     def has_completed(self):
         return self.pos < -self.maxwidth
-
 
 if __name__ == "__main__":
     start()
