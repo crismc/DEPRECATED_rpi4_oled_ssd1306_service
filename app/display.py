@@ -75,14 +75,12 @@ run_main_loop = True
 home_assistant = None
 
 def start():
-    config = configparser.ConfigParser()
-    config.read(CONF_FILE)
-
-    screens = [x for x in config.sections() if x.lower() != 'default']
+    config = Config(CONF_FILE)
+    screens = config.get_screens()
 
     while run_main_loop:
         for screen in screens:
-            section_config = config[screen]
+            section_config = config.get_section(screen)
             if run_main_loop and show_screen(section_config):
                 func_to_run = globals()[section_config.get(SCREEN_OPT_RENDERER)]
                 func_to_run(config)
@@ -394,6 +392,51 @@ class Scroller:
 
     def has_completed(self):
         return self.pos < -self.maxwidth
+
+class Config:
+    def __init__(self, file = None, section = None):
+        self.file_path = file
+        self.section = section
+        self.exclude_namespaces = ['default']
+        self.screens = []
+        if self.file_path:
+            self.load(self.file_path)
+
+    def load(self, file):
+        self.config = configparser.ConfigParser()
+        self.config.read(file)
+
+    def get_screens(self):
+        if not self.screens:
+            self.screens = [x for x in self.config.sections() if x.lower() not in self.exclude_namespaces]
+        return self.screens
+
+    def get_section(self, section):
+        return SectionConfig(self.config, section)
+
+class SectionConfig:
+    def __init__(self, config, section_name):
+        self.config = config
+        self.section_name = section_name
+        self.section = self.config[self.section_name]
+
+    def get_section(self):
+        return self.section
+        
+    def get(self, key, default):
+        return self.section.get(key, default)
+
+    def has_option(self, key):
+        return self.config.has_option(self.section_name, key)
+
+    def getint(self, key, default):
+        return self.section.getint(key, default)
+
+    def getboolean(self, key, default):
+        return self.section.getboolean(key, default)
+
+    def set(self, key, value):
+        return self.config.set(self.section_name, key, value)
 
 if __name__ == "__main__":
     start()
