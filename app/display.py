@@ -83,7 +83,7 @@ def start():
             section_config = config.get_section(screen)
             if run_main_loop and show_screen(section_config):
                 func_to_run = globals()[section_config.get(SCREEN_OPT_RENDERER)]
-                func_to_run(config)
+                func_to_run(section_config)
 
 def render_storage(config):
     storage =  shell_cmd('df -h | awk \'$NF=="/"{printf "%d,%d,%s", $3,$2,$5}\'')
@@ -278,10 +278,11 @@ def show_screen(config):
         if config.getboolean(SCREEN_OPT_SHOW):
             if config.has_option(SCREEN_OPT_LIMIT):
                 if not config.has_option(SCREEN_OPT_LIMITREMAINING):
-                    config.set(SCREEN_OPT_LIMITREMAINING, config.getint(SCREEN_OPT_LIMIT))
+                    config.set(SCREEN_OPT_LIMITREMAINING, config.get(SCREEN_OPT_LIMIT))
                 if config.has_option(SCREEN_OPT_LIMITREMAINING):
                     if config.getint(SCREEN_OPT_LIMITREMAINING):
-                        config.set(SCREEN_OPT_LIMITREMAINING, config.getint(SCREEN_OPT_LIMITREMAINING) - 1)
+                        countdown = config.getint(SCREEN_OPT_LIMITREMAINING) - 1
+                        config.set(SCREEN_OPT_LIMITREMAINING, str(countdown))
                         return True
                     else:
                         return False
@@ -423,16 +424,16 @@ class SectionConfig:
     def get_section(self):
         return self.section
         
-    def get(self, key, default):
+    def get(self, key, default = None):
         return self.section.get(key, default)
 
     def has_option(self, key):
         return self.config.has_option(self.section_name, key)
 
-    def getint(self, key, default):
+    def getint(self, key, default = None):
         return self.section.getint(key, default)
 
-    def getboolean(self, key, default):
+    def getboolean(self, key, default = None):
         return self.section.getboolean(key, default)
 
     def set(self, key, value):
