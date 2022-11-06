@@ -14,6 +14,7 @@ import configparser
 import subprocess
 import json
 import pathlib
+import signal
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
@@ -71,17 +72,19 @@ img_disk = Image.open(r"" + current_dir + "/img/database-outline.png")
 img_ha_logo = m = Image.open(r"" + current_dir + "/img/home-assistant-logo.png") 
 img_cpu_64 = Image.open(r"" + current_dir + "/img/cpu-64-bit.png") 
 
-run_main_loop = True
 home_assistant = None
 
 def start():
     config = Config(CONF_FILE)
     screens = config.get_screens()
+    render_static()
+    
+    runner = GracefulExit(render_static)
 
-    while run_main_loop:
+    while not runner.exit:
         for screen in screens:
             section_config = config.get_section(screen)
-            if run_main_loop and show_screen(section_config):
+            if not runner.exit and show_screen(section_config):
                 func_to_run = globals()[section_config.get(SCREEN_OPT_RENDERER)]
                 func_to_run(section_config)
 
@@ -213,7 +216,7 @@ def render_splash(config):
     draw.line([(34, 16),(123,16)], fill=255, width=1)
 
     ln1 = "Home Assistant"
-    ln1_x = get_text_center(ln1, p_bold, 78)
+    ln1_x = get_text_center(ln1, p_bold)
     draw.text((ln1_x, 2), ln1, font=p_bold, fill=255)
 
     # Write Test, Eventually will get from HA API.
@@ -224,7 +227,7 @@ def render_splash(config):
         ln2.append(core_version)
 
     ln2 = ' - '.join(ln2)
-    ln2_x = get_text_center(ln2, medium, 78)
+    ln2_x = get_text_center(ln2, medium)
     draw.text((ln2_x, 18), ln2, font=medium, fill=255)
 
 
@@ -247,13 +250,15 @@ def render_welcome(config):
         if not scroller.move_for_next_frame(time.time() < timer):
             break
 
-def render_static(text):
+def render_static(text = None, font = medium):
     draw.rectangle((0,0,width,height), outline=0, fill=0)
-    draw.text((3, 4), text, font=large, fill=255)
+    if text:
+        x = get_text_center(text, font)
+        draw.text((x, 4), text, font=font, fill=255)
     disp.image(image)
     disp.display()
 
-def get_text_center(text, font, center_point):
+def get_text_center(text, font, center_point = 78):
     w, h = draw.textsize(text, font=font)
     return (center_point -(w/2))
 
@@ -438,6 +443,17 @@ class SectionConfig:
 
     def set(self, key, value):
         return self.config.set(self.section_name, key, value)
+
+class GracefulExit:
+  exit = False
+  def __init__(self, renderer):
+    self.renderer = renderer
+    signal.signal(signal.SIGINT, self.exit_gracefully)
+    signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+  def exit_gracefully(self, *args):
+    self.exit = True
+    self.renderer('Goodbye')
 
 if __name__ == "__main__":
     start()
