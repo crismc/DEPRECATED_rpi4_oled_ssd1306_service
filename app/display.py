@@ -86,7 +86,7 @@ def start():
             section_config = config.get_section(screen)
             if not runner.exit and show_screen(section_config):
                 func_to_run = globals()[section_config.get(SCREEN_OPT_RENDERER)]
-                func_to_run(section_config)
+                func_to_run(section_config, runner)
 
 def render_storage(config):
     storage =  shell_cmd('df -h | awk \'$NF=="/"{printf "%d,%d,%s", $3,$2,$5}\'')
@@ -237,11 +237,11 @@ def render_splash(config):
     disp.display() 
     time.sleep(get_duration(config))
 
-def render_welcome(config):
+def render_welcome(config, runner):
     hostname = get_hostname()
     scroller = Scroller('Welcome to ' + hostname, height/2 - 4, width, height/4, large)
     timer = time.time() + get_duration(config)
-    while True:
+    while not runner.exit:
         draw.rectangle((0,0,width,height), outline=0, fill=0)
         scroller.render()
         disp.image(image)
