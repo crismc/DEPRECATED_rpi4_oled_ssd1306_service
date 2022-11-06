@@ -88,7 +88,7 @@ def start():
                 func_to_run = globals()[section_config.get(SCREEN_OPT_RENDERER)]
                 func_to_run(section_config, runner)
 
-def render_storage(config):
+def render_storage(config, runner):
     storage =  shell_cmd('df -h | awk \'$NF=="/"{printf "%d,%d,%s", $3,$2,$5}\'')
     storage = storage.split(',')
 
@@ -109,7 +109,7 @@ def render_storage(config):
     disp.display()
     time.sleep(get_duration(config))  
 
-def render_memory(config):
+def render_memory(config, runner):
     mem = shell_cmd("free -m | awk 'NR==2{printf \"%.1f,%.1f,%.0f%%\", $3/1000,$2/1000,$3*100/$2 }'")
     mem = mem.split(',')
 
@@ -130,7 +130,7 @@ def render_memory(config):
     disp.display()
     time.sleep(get_duration(config)) 
 
-def render_cpu_temp(config):
+def render_cpu_temp(config, runner):
     #host_info = hassos_get_info('host/info')
     cpu = shell_cmd("top -bn1 | grep load | awk '{printf \"%.2f\", $(NF-2)}'")
     temp =  float(shell_cmd("cat /sys/class/thermal/thermal_zone0/temp")) / 1000.00
@@ -160,7 +160,7 @@ def render_cpu_temp(config):
     disp.display()
     time.sleep(get_duration(config))
 
-def render_network(config):
+def render_network(config, runner):
     #host_info = hassos_get_info('host/info')
     #hostname = host_info['data']['hostname'].upper()
 
@@ -189,7 +189,7 @@ def render_network(config):
     disp.display()
     time.sleep(get_duration(config))
 
-def render_splash(config):
+def render_splash(config, runner):
     os_info = hassos_get_info('os/info')
     os_version = os_info['data']['version']
     os_upgrade = os_info['data']['update_available']  
